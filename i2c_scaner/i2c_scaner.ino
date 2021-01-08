@@ -6,12 +6,13 @@
 
 String inputString = "";     // a String to hold incoming data
 bool stringComplete = false; // whether the string is complete
+bool inputSpacer = false;
 bool linked = false;
 String runtime = "";
 
 void setup() {
-	Serial.begin(115200);
-	Serial.println("ArduEx 0.1 Boot!\nPlease input command with Ansi code:");
+	Serial.begin(9600);
+	Serial.println("\nArduEx 0.1 Boot!\nPlease input command with Ansi code:");
 }
 
 void loop()
@@ -19,9 +20,9 @@ void loop()
 	ReadSerial();
 	if (stringComplete)
 	{
-//	words.set(inputString, " \t");
+		//	words.set(inputString, " \t");
 
-		Serial.println(inputString + "/ input");
+		Serial.println("[input]"+inputString  );
 		//Serial.print(" words.size=");
 		//Serial.println(words.size);
 
@@ -36,14 +37,25 @@ void ReadSerial()
 	while (Serial.available())
 	{
 		char inChar = (char)Serial.read();
-		inputString += inChar;
-		if (inChar == '\n' || inChar == '.')
-		{
-			stringComplete = true;
-			inputString.trim();
-			if (inputString.length() > 0)
-				return;
+
+		if (inChar == '\t' || inChar == ' ') {
+			if (inputSpacer)
+				continue;
+			inputSpacer = true;
+			inputString += ' ';
 		}
+		else {
+			inputSpacer = false;
+			inputString += inChar;
+			if (inChar == '\n' || inChar == '.')
+			{
+				stringComplete = true;
+				inputString.trim();
+				if (inputString.length() > 0)
+					return;
+			}
+		}
+
 	}
 }
 
