@@ -1,13 +1,23 @@
 #include <Wire.h>
 
+
+
+
 /*
+ * // #include "esp32_i2s.h"
+
  Name:		i2c_scaner.ino
  Created:	2021/1/8 1:27:04
  Author:	Yazii
+
+ 待完成：
+loop间隔时间
+loop次数
+i2c速率
+
 */
 
 uint8_t ID = 0x68;
-
 
 String inputString = "";     // a String to hold incoming data
 bool stringComplete = false; // whether the string is complete
@@ -427,6 +437,33 @@ void run_i2c(String cmd)
 		else 
 			Serial.println("[Done]i2c_read, show as HEX");
 		}
+	}
+	else if (w0 == "clk") {
+	if (size > 1) {
+		int s1 = getWordStart(cmd, e0);
+		int e1 = getWordEnd(cmd, s1);
+		String w1 = cmd.substring(s1, e1);
+		int clk = (uint8_t)str2int(w1);
+		if (w1.endsWith("m")) {
+			clk = clk * 1000000;
+		}
+		else if (w1.endsWith("k")) {
+			clk = clk * 1000;
+		}
+		if (clk > 0 && clk < 100000000) {
+			Wire.setClock(clk);
+		}
+		else {
+			Serial.print("[Err]i2c_clk, set clock = ");
+			Serial.println(clk);
+			return;
+		}
+	}
+
+		Serial.print("[Done]i2c_clk = ");
+		Serial.println(Wire.getClock());
+		return;
+
 	}
 	else if (w0 == "demo") {
 		int reading = 0;

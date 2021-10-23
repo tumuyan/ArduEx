@@ -115,11 +115,15 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="esp32_i2s.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="__vm\.i2c_scaner.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="i2c_scaner.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="esp32_i2s.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
