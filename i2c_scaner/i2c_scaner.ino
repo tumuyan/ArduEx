@@ -1,5 +1,5 @@
 #include <Wire.h>
-
+#include "i2c_oled.h"
 
 
 
@@ -32,6 +32,7 @@ void setup() {
 	Wire.begin();
 	Serial.begin(115200);
 	Serial.println("\nArduEx 0.1 Boot!\nPlease input command with Ansi code:");
+
 }
 
 void loop()
@@ -482,7 +483,19 @@ void run_i2c(String cmd)
 			Serial.println(reading);   // print the reading
 
 		}
-	}
+	}else if(w0 == "oled_demo"){
+            String demo_name="";
+        	if (size > 1) {
+		int s1 = getWordStart(cmd, e0);
+		int e1 = getWordEnd(cmd, s1);
+		demo_name = cmd.substring(s1, e1);
+		 demo_name.trim();
+            }
+            
+			Serial.println(demo_name);   
+        	I2C_OLED i2c_oled;
+    i2c_oled.demo(demo_name,true);
+    }
 	else {
 		Serial.println("[Err]i2c, Unknow Parameter.");
 		return;
