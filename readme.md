@@ -6,6 +6,8 @@
 
 
 ## 功能
+- [x] 读写指定IO逻辑电平
+- [x] USB键盘
 - [x] i2c设备扫描、连接、读写
 - [ ] i2s数据读写
 - [ ] 由于我的Esp32S2只有WiFi没有蓝牙，不考虑蓝牙控制的功能。
@@ -22,6 +24,7 @@
 1. loop：循环运行上次运行的命令。输入q可以退出循环模式。
 1. I2C（支持参数）：扫描、读写I2C设备
 3. I2S（支持参数）：读写I2S设备
+4. pin (支持参数) ：读写指定IO
 2. runtime: 查看当前的runtime
 5. exit/quit
 6. help：查看帮助
@@ -32,9 +35,13 @@
 4. 命令支持的参数可以通过输入`命令 help`来查看，不再在文档中赘述。 
 4. 每行命令以\n或\.作为结束符号。
 
+## 依赖
+1. Adafruit_GFX
+2. Adafruit_SSD1306
+3. Adafruit_Keypad
 
 ## 测试环境
-* ESP32-S2-SAOLA-1(已经快坏了)
+* ESP32-S2-SAOLA-1
 
 ## 运行截图
 推荐一下我在用的串口工具 https://github.com/tumuyan/SerialTool 

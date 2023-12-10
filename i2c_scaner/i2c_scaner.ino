@@ -29,6 +29,8 @@ i2c速率
 
 */
 
+#define TITLE_KEYPAD "USB KeyPad"
+#define TITLE_LAYER "Set Layer"
 // cmd
 uint8_t ID = 0x68;
 
@@ -49,10 +51,35 @@ I2C_OLED i2c_oled;
 
 //  keypad
 String keyInString = "";
-String keyHint = "1 2 3 4 5\n6 7 8 9 0\n> ";
-int keyPadMode = 1;   // 1: USB keyboard 0-9   
+
+const int layerKey = 9;
+const int layerNum = 8;
+String layerHint = "1 a k u + \nNav F0 F1\n>";
+char keySets[layerNum][10] = {
+  { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' },
+  { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j' },
+  { 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't' },
+  { 'u', 'v', 'w', ',', KEY_BACKSPACE, 'x', 'y', 'z', '.', KEY_RETURN },
+  { '+', '-', '*', '/', '\\', '.', ';', '\'', '=', '0' },
+  { KEY_PAGE_UP, KEY_UP_ARROW, KEY_PAGE_DOWN, KEY_TAB, KEY_ESC, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_RETURN, KEY_HOME },
+  { KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10 },
+  { KEY_F11, KEY_F12, KEY_F13, KEY_F14, KEY_F15, KEY_F16, KEY_F17, KEY_F18, KEY_F19, KEY_F20 }
+};
+
+String keyHints[layerNum] = {
+  "1 2 3 4 5\n6 7 8 9 0\n> ",
+  "a b c d e\nf g h i j\n> ",
+  "k l m n o\np q r s t\n> ",
+  "u v w , \\b\nx y z . \\n\n> ",
+  "+ - * / \\\n, . ; ' =\n> ",
+  "U w D\\t Es\n asd \\n Ho\n> ",
+  "F1 F2 F3 .\nF6 F7 F8 .\n> ",
+  "F11 F12 ..\nF16 F17 ..\n> ",
+};
+int layer = 0;        // 0: USB keyboard 0-9
 const byte ROWS = 5;  // rows
 const byte COLS = 2;  // columns
+char keyName[ROWS * COLS] = { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' };
 //define the symbols on the buttons of the keypads
 char keys[ROWS][COLS] = {
   { '1', '6' },
@@ -78,36 +105,86 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\nArduEx 0.1 Boot!\nPlease input command with Ansi code:");
   // i2c_oled.keyin(true, "ArduEx", "\n> ver 0.2");
-  i2c_oled.keyin(true, "USB KeyPad", keyHint);
+  i2c_oled.keyin(true, TITLE_KEYPAD, keyHints[layer]);
 }
 
-void loop() {
+bool layerChange = false;
+bool layerKeyPressed = false;
 
+void loop() {
   customKeypad.tick();
+
+  keyInString = "";
+
 
   while (customKeypad.available()) {
     keypadEvent e = customKeypad.read();
     char c = (char)e.bit.KEY;
+    int i = e.bit.ROW + e.bit.COL * ROWS;
     Serial.print(c);
     if (e.bit.EVENT == KEY_JUST_PRESSED) {
       Serial.println(" o");
-      if (keyPadMode == 1) {
 
-        Keyboard.write(c);
-        i2c_oled.keyin(true, "USB KeyPad", keyHint + c);
+      if (i != layerKey) {
+        if (layerKeyPressed) {
 
-      } else {
+          if (i >= layerNum)
+            layer = 0;
+          else
+            layer = i;
+          layerChange = true;
+          i2c_oled.keyin(true, TITLE_KEYPAD, keyHints[layer]);
 
-        keyInString += c;
-        if (keyInString.length() > 30) {
-          keyInString = keyInString.substring(10);
+        } else {
+          char k = keySets[layer][i];
+          //Keyboard.write(c);
+
+          Keyboard.press(k);
+          keyInString += c;
+          keyInString += "o ";
+          i2c_oled.keyin(true, TITLE_KEYPAD, keyHints[layer] + keyInString);
         }
 
-        i2c_oled.keyin(true, "Key in:", keyInString);
+      } else {
+        layerKeyPressed = true;
+        i2c_oled.keyin(true, TITLE_LAYER, layerHint);
       }
-    } else if (e.bit.EVENT == KEY_JUST_RELEASED) {
 
+    } else if (e.bit.EVENT == KEY_JUST_RELEASED) {
       Serial.println(" x");
+
+      if (i != layerKey) {
+        if (layerKeyPressed) {
+
+          i2c_oled.keyin(true, TITLE_LAYER, layerHint + keyName[i]);
+
+        } else {
+
+          char k = keySets[layer][i];
+          Keyboard.release(k);
+          keyInString += c;
+          keyInString += "x ";
+          if (keyInString.length() > 30) {
+            keyInString = keyInString.substring(10);
+          }
+          i2c_oled.keyin(true, TITLE_KEYPAD, keyHints[layer] + keyInString);
+        }
+
+      } else {
+        layerKeyPressed = false;
+        if (layerChange) {
+          layerChange = false;
+        } else {
+          // 发送 layerkey 的键盘事件
+          char k = keySets[layer][i];
+          Keyboard.write(k);
+
+          //Keyboard.press(k);
+          keyInString += c;
+          keyInString += "x ";
+        }
+        i2c_oled.keyin(true, TITLE_KEYPAD, keyHints[layer] + keyInString);
+      }
     }
   }
 

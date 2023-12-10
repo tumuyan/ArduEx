@@ -52,7 +52,7 @@ void I2C_OLED::keyin(bool cls, String title, String text) {
       // title 
       display.setTextSize(2);                              // Normal 1:1 pixel scale
       display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);  // Draw 'inverse' text
-      display.setCursor(0, 0);                             // Start at left-top corner
+      display.setCursor(5, 0);                             // Start at left-top corner
       display.println(title);
       // text
       display.setTextColor(SSD1306_WHITE);
