@@ -60,7 +60,7 @@ char keySets[layerNum][10] = {
   { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j' },
   { 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't' },
   { 'u', 'v', 'w', ',', KEY_BACKSPACE, 'x', 'y', 'z', '.', KEY_RETURN },
-  { '+', '-', '*', '/', '\\', '.', ';', '\'', '=', '0' },
+  { '+', '-', '*', '/', '\\', ' ', '.', ';', '\'', '=' },
   { KEY_PAGE_UP, KEY_UP_ARROW, KEY_PAGE_DOWN, KEY_TAB, KEY_ESC, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_RETURN, KEY_HOME },
   { KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10 },
   { KEY_F11, KEY_F12, KEY_F13, KEY_F14, KEY_F15, KEY_F16, KEY_F17, KEY_F18, KEY_F19, KEY_F20 }
@@ -71,7 +71,7 @@ String keyHints[layerNum] = {
   "a b c d e\nf g h i j\n> ",
   "k l m n o\np q r s t\n> ",
   "u v w , \\b\nx y z . \\n\n> ",
-  "+ - * / \\\n, . ; ' =\n> ",
+  "+ - * / \\\n  . ; ' =\n> ",
   "U w D\\t Es\n asd \\n Ho\n> ",
   "F1 F2 F3 .\nF6 F7 F8 .\n> ",
   "F11 F12 ..\nF16 F17 ..\n> ",
