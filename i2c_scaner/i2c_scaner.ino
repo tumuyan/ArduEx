@@ -1,5 +1,17 @@
+#include <Adafruit_Keypad.h>
+#include <Adafruit_Keypad_Ringbuffer.h>
+
+
 #include <Wire.h>
 #include "i2c_oled.h"
+
+#include <Key.h>
+
+
+#include "USB.h"
+
+#include "USBHIDKeyboard.h"
+
 
 
 
@@ -17,6 +29,7 @@ i2c速率
 
 */
 
+// cmd
 uint8_t ID = 0x68;
 
 String inputString = "";      // a String to hold incoming data
@@ -31,13 +44,75 @@ String loopingCmd = "";  // cache last command
 int pinState[60];
 int outputPins[60];
 
+I2C_OLED i2c_oled;
+
+
+//  keypad
+String keyInString = "";
+String keyHint = "1 2 3 4 5\n6 7 8 9 0\n> ";
+int keyPadMode = 1;   // 1: USB keyboard 0-9   
+const byte ROWS = 5;  // rows
+const byte COLS = 2;  // columns
+//define the symbols on the buttons of the keypads
+char keys[ROWS][COLS] = {
+  { '1', '6' },
+  { '2', '7' },
+  { '3', '8' },
+  { '4', '9' },
+  { '5', '0' }
+};
+byte rowPins[ROWS] = { 21, 39, 40, 41, 42 };  //connect to the row pinouts of the keypad
+byte colPins[COLS] = { 16, 45 };              //connect to the column pinouts of the keypad
+
+//initialize an instance of class NewKeypad
+Adafruit_Keypad customKeypad = Adafruit_Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+USBHIDKeyboard Keyboard;
+
 void setup() {
+  Keyboard.begin();
+  USB.begin();
+  customKeypad.begin();
+
   Wire.begin();
   Serial.begin(115200);
   Serial.println("\nArduEx 0.1 Boot!\nPlease input command with Ansi code:");
+  // i2c_oled.keyin(true, "ArduEx", "\n> ver 0.2");
+  i2c_oled.keyin(true, "USB KeyPad", keyHint);
 }
 
 void loop() {
+
+  customKeypad.tick();
+
+  while (customKeypad.available()) {
+    keypadEvent e = customKeypad.read();
+    char c = (char)e.bit.KEY;
+    Serial.print(c);
+    if (e.bit.EVENT == KEY_JUST_PRESSED) {
+      Serial.println(" o");
+      if (keyPadMode == 1) {
+
+        Keyboard.write(c);
+        i2c_oled.keyin(true, "USB KeyPad", keyHint + c);
+
+      } else {
+
+        keyInString += c;
+        if (keyInString.length() > 30) {
+          keyInString = keyInString.substring(10);
+        }
+
+        i2c_oled.keyin(true, "Key in:", keyInString);
+      }
+    } else if (e.bit.EVENT == KEY_JUST_RELEASED) {
+
+      Serial.println(" x");
+    }
+  }
+
+  delay(1);
+
 
   ReadSerial();
   if (stringComplete) {
@@ -63,10 +138,10 @@ void loop() {
   }
 }
 
+// 读取一行串口内容（一个或多个tab和空格转为一个空格,跳过空行）
 void ReadSerial() {
   while (Serial.available()) {
     char inChar = (char)Serial.read();
-
     if (inChar == '\t' || inChar == ' ') {
       if (inputSpacer)
         continue;
@@ -74,13 +149,14 @@ void ReadSerial() {
       inputString += ' ';
     } else {
       inputSpacer = false;
-      if (inChar == '\n' || inChar == '.') {
-        stringComplete = true;
+      if (inChar == '\n' || inChar == '\r' || inChar == '.') {
         inputString.trim();
-        if (inputString.length() > 0)
+        if (inputString.length() > 0) {
+          stringComplete = true;
           return;
-      }
-      inputString += inChar;
+        }
+      } else
+        inputString += inChar;
     }
   }
 }
@@ -516,8 +592,15 @@ void run_i2c(String cmd) {
     }
 
     Serial.println(demo_name);
-    I2C_OLED i2c_oled;
     i2c_oled.demo(demo_name, true);
+  } else if (w0 == "keyin") {
+    if (size > 1) {
+      int s1 = getWordStart(cmd, e0);
+      int e1 = getWordEnd(cmd, s1);
+      String text = cmd.substring(s1, e1);
+      Serial.println(text);
+      i2c_oled.keyin(true, "Key In>", text);
+    }
   } else {
     Serial.println("[Err]i2c, Unknow Parameter.");
     return;

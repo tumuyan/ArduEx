@@ -77,7 +77,7 @@ public:
     void reset(void);
         void cls(void);
     void demo(String demo_name, bool cls);
-
+    void keyin(bool cls, String title, String text);
 };
 
 
