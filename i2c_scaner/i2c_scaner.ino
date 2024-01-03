@@ -1,18 +1,14 @@
 #include <Adafruit_Keypad.h>
 #include <Adafruit_Keypad_Ringbuffer.h>
 
-
 #include <Wire.h>
 #include "i2c_oled.h"
 
 #include <Key.h>
-
-
 #include "USB.h"
-
 #include "USBHIDKeyboard.h"
-
-
+#include "USBHIDConsumerControl.h"
+#include "hut_keycode.h"
 
 
 /*
@@ -43,8 +39,8 @@ String runtime = "";          //
 bool looping = false;    // flag for repeat last commant
 String loopingCmd = "";  // cache last command
 
-int pinState[60];
-int outputPins[60];
+uint8_t pinState[60];
+uint8_t outputPins[60];
 
 I2C_OLED i2c_oled;
 
@@ -52,10 +48,10 @@ I2C_OLED i2c_oled;
 //  keypad
 String keyInString = "";
 
-const int layerKey = 9;
-const int layerNum = 8;
+const short layerKey = 9;
+const short layerNum = 9;
 String layerHint = "1 a k u + \nNav F0 F1\n>";
-char keySets[layerNum][10] = {
+short keySets[layerNum][10] = {
   { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' },
   { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j' },
   { 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't' },
@@ -63,7 +59,11 @@ char keySets[layerNum][10] = {
   { '+', '-', '*', '/', '\\', ' ', '.', ';', '\'', '=' },
   { KEY_PAGE_UP, KEY_UP_ARROW, KEY_PAGE_DOWN, KEY_TAB, KEY_ESC, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_RETURN, KEY_HOME },
   { KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10 },
-  { KEY_F11, KEY_F12, KEY_F13, KEY_F14, KEY_F15, KEY_F16, KEY_F17, KEY_F18, KEY_F19, KEY_F20 }
+  { KEY_F11, KEY_F12, KEY_F13, KEY_F14, KEY_F15, KEY_F16, KEY_F17, KEY_F18, KEY_F19, KEY_F20 },
+  // {KEY_APPLICATION, KEY_MENU, KEY_HELP, KEY_SELECT,KEY_STOP,KEY_CANNEL, KEY_CLEAR,KEY_RETURN, KEY_PRINTSCREEN,KEY_PAUSE}
+  { KEY_APPLICATION, CONSUMER_CONTROL_HOME +1000, CONSUMER_CONTROL_BACK +1000, KEY_PRINTSCREEN, KEY_DOWN_ARROW,
+    CONSUMER_CONTROL_SEARCH + 1000, KEY_BACKSPACE, KEY_RETURN, KEY_TAB, KEY_RIGHT_SHIFT }
+
 };
 
 String keyHints[layerNum] = {
@@ -75,6 +75,7 @@ String keyHints[layerNum] = {
   "U w D\\t Es\n asd \\n Ho\n> ",
   "F1 F2 F3 .\nF6 F7 F8 .\n> ",
   "F11 F12 ..\nF16 F17 ..\n> ",
+  "AppHo Ba P\nFin\\b\\nn n\n> "
 };
 int layer = 0;        // 0: USB keyboard 0-9
 const byte ROWS = 5;  // rows
@@ -96,8 +97,11 @@ Adafruit_Keypad customKeypad = Adafruit_Keypad(makeKeymap(keys), rowPins, colPin
 
 USBHIDKeyboard Keyboard;
 
+USBHIDConsumerControl ConsumerControl;
+
 void setup() {
   Keyboard.begin();
+  ConsumerControl.begin();
   USB.begin();
   customKeypad.begin();
 
@@ -136,10 +140,12 @@ void loop() {
           i2c_oled.keyin(true, TITLE_KEYPAD, keyHints[layer]);
 
         } else {
-          char k = keySets[layer][i];
-          //Keyboard.write(c);
-
-          Keyboard.press(k);
+          short k = keySets[layer][i];
+          process_key(k, true, false);
+          // if (k < 256)
+          //   Keyboard.press(k);
+          // else
+          //   Keyboard.pressRaw(k - 0x88);
           keyInString += c;
           keyInString += "o ";
           i2c_oled.keyin(true, TITLE_KEYPAD, keyHints[layer] + keyInString);
@@ -160,8 +166,12 @@ void loop() {
 
         } else {
 
-          char k = keySets[layer][i];
-          Keyboard.release(k);
+          short k = keySets[layer][i];
+          process_key(k, false, true);
+          // if (k < 256)
+          //   Keyboard.release(k);
+          // else
+          //   Keyboard.releaseRaw(k - 0x88);
           keyInString += c;
           keyInString += "x ";
           if (keyInString.length() > 30) {
@@ -176,10 +186,15 @@ void loop() {
           layerChange = false;
         } else {
           // 发送 layerkey 的键盘事件
-          char k = keySets[layer][i];
-          Keyboard.write(k);
+          short k = keySets[layer][i];
+          process_key(k, true, true);
 
-          //Keyboard.press(k);
+          // if (k < 256)
+          //   Keyboard.write(k);
+          // else {
+          //   Keyboard.pressRaw(k - 0x88);
+          //   Keyboard.releaseRaw(k - 0x88);
+          // }
           keyInString += c;
           keyInString += "x ";
         }
@@ -234,6 +249,29 @@ void ReadSerial() {
         }
       } else
         inputString += inChar;
+    }
+  }
+}
+
+
+void process_key(short k, bool press, bool release) {
+  if (press) {
+    if (k < 256)
+      Keyboard.press(k);
+    else if (k < 1000) {
+      Keyboard.pressRaw(k - 0x88);
+    } else {
+      ConsumerControl.press(k - 1000);
+    }
+  }
+
+  if (release) {
+    if (k < 256)
+      Keyboard.release(k);
+    else if (k < 1000) {
+      Keyboard.releaseRaw(k - 0x88);
+    } else {
+      ConsumerControl.release();
     }
   }
 }
