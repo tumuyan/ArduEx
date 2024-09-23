@@ -61,8 +61,8 @@ short keySets[layerNum][10] = {
   { KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10 },
   { KEY_F11, KEY_F12, KEY_F13, KEY_F14, KEY_F15, KEY_F16, KEY_F17, KEY_F18, KEY_F19, KEY_F20 },
   // {KEY_APPLICATION, KEY_MENU, KEY_HELP, KEY_SELECT,KEY_STOP,KEY_CANNEL, KEY_CLEAR,KEY_RETURN, KEY_PRINTSCREEN,KEY_PAUSE}
-  { KEY_APPLICATION, CONSUMER_CONTROL_HOME +1000, CONSUMER_CONTROL_BACK +1000, KEY_PRINTSCREEN, KEY_DOWN_ARROW,
-    CONSUMER_CONTROL_SEARCH + 1000, KEY_BACKSPACE, KEY_RETURN, KEY_TAB, KEY_RIGHT_SHIFT }
+  { KEY_APPLICATION, CONSUMER_CONTROL_HOME + 1000, CONSUMER_CONTROL_BACK + 1000, KEY_PRINTSCREEN, '#',
+    CONSUMER_CONTROL_SEARCH + 1000, KEY_BACKSPACE, KEY_RETURN, KEY_TAB, '3' }
 
 };
 
@@ -75,7 +75,7 @@ String keyHints[layerNum] = {
   "U w D\\t Es\n asd \\n Ho\n> ",
   "F1 F2 F3 .\nF6 F7 F8 .\n> ",
   "F11 F12 ..\nF16 F17 ..\n> ",
-  "AppHo Ba P\nFin\\b\\nn n\n> "
+  "Ap Ho Bk P\nSe \\b \\n\\t\n> "
 };
 int layer = 0;        // 0: USB keyboard 0-9
 const byte ROWS = 5;  // rows
@@ -99,6 +99,10 @@ USBHIDKeyboard Keyboard;
 
 USBHIDConsumerControl ConsumerControl;
 
+unsigned long wake_time = 100000;
+unsigned long wake = 0;
+bool oled_off = false;
+
 void setup() {
   Keyboard.begin();
   ConsumerControl.begin();
@@ -110,6 +114,7 @@ void setup() {
   Serial.println("\nArduEx 0.1 Boot!\nPlease input command with Ansi code:");
   // i2c_oled.keyin(true, "ArduEx", "\n> ver 0.2");
   i2c_oled.keyin(true, TITLE_KEYPAD, keyHints[layer]);
+  wake = millis() + wake_time;
 }
 
 bool layerChange = false;
@@ -122,6 +127,12 @@ void loop() {
 
 
   while (customKeypad.available()) {
+    if (oled_off && millis() > wake) {
+      oled_off = false;
+      i2c_oled.power(true);
+    }
+    wake = millis() + wake_time;
+
     keypadEvent e = customKeypad.read();
     char c = (char)e.bit.KEY;
     int i = e.bit.ROW + e.bit.COL * ROWS;
@@ -201,6 +212,11 @@ void loop() {
         i2c_oled.keyin(true, TITLE_KEYPAD, keyHints[layer] + keyInString);
       }
     }
+  }
+
+  if (!oled_off && millis() > wake) {
+    oled_off = true;
+    i2c_oled.power(false);
   }
 
   delay(1);

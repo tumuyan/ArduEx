@@ -41,26 +41,39 @@ void I2C_OLED::keyin(bool cls, String title, String text) {
   if (display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     if (cls) {
       display.clearDisplay();
-      //   display.display();
+      //  display.display();
     }
 
     {
+      // display.ssd1306_command(0xAE);
       // Title background
       int i = 8;
-      display.fillRoundRect(0, 0, display.width(), 2 * i, 0, SSD1306_INVERSE);
-      //  display.fillRoundRect(0, 0, display.width(), 2 * i, i, SSD1306_INVERSE);
-      // title 
-      display.setTextSize(2);                              // Normal 1:1 pixel scale
-      display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);  // Draw 'inverse' text
-      display.setCursor(5, 0);                             // Start at left-top corner
-      display.println(title);
+      display.setTextSize(2);  // Normal 1:1 pixel scale
+      display.setTextColor(SSD1306_WHITE);
       // text
       display.setTextColor(SSD1306_WHITE);
-
-      // display.print(F("0x"));
-      // display.println(0xDEADBEEF, HEX);
       display.print(text);
+
+      display.fillRoundRect(0, 6 * i, display.width(), 2 * i, i, SSD1306_INVERSE);
+      display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);  // Draw 'inverse' text
+
+      display.setCursor(5, 6 * i);  // Start at left-top corner
+      display.println(title);
       display.display();
+      // display.ssd1306_command(0xAF);
+    }
+  }
+}
+
+
+
+void I2C_OLED::power(bool on) {
+  Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+  if (display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    if (on) {
+      display.ssd1306_command(0xAF);
+    } else {
+      display.ssd1306_command(0xAe);
     }
   }
 }
